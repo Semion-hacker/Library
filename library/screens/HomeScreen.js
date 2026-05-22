@@ -13,7 +13,6 @@ import { slots as initialSlots } from '../data/slots';
 import AllBooksScreen from './AllBooksScreen';
 import FavoritesScreen from './FavoritesScreen';
 import StatisticsScreen from './StatisticsScreen';
-import UserScreen from './UserScreen';
 
 export default function HomeScreen() {
   const { visible, open, close, opacity } = useEditMode();
@@ -50,8 +49,6 @@ export default function HomeScreen() {
         return <FavoritesScreen />;
       case 3:
         return <StatisticsScreen />;
-      case 4:
-        return <UserScreen />;
       default:
         return null;
     }

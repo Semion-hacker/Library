@@ -4,10 +4,10 @@ import MyLibraryIcon from '../assets/images/svg/myLibrary.svg';
 import AllBooksIcon from '../assets/images/svg/allBooks.svg';
 import FavoritesIcon from '../assets/images/svg/favorites.svg';
 import StatisticsIcon from '../assets/images/svg/statistics.svg';
-import UserIcon from '../assets/images/svg/user.svg';
+// import UserIcon from '../assets/images/svg/user.svg'; // УДАЛЕНО
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TAB_COUNT = 5;
+const TAB_COUNT = 4; // ИЗМЕНЕНО с 5 на 4
 const TAB_WIDTH = SCREEN_WIDTH / TAB_COUNT;
 
 const ICONS = [
@@ -15,7 +15,7 @@ const ICONS = [
   { name: 'allBooks', Icon: AllBooksIcon },
   { name: 'favorites', Icon: FavoritesIcon },
   { name: 'statistics', Icon: StatisticsIcon },
-  { name: 'user', Icon: UserIcon },
+  // { name: 'user', Icon: UserIcon }, // УДАЛЕНО
 ];
 
 const inactiveColor = '#E8E8E8';
@@ -31,10 +31,11 @@ export default function TabBar({ activeTab, onTabPress }) {
       tension: 100,
       useNativeDriver: true,
     }).start();
-  }, [activeTab]);
+  }, [activeTab, TAB_WIDTH]);
 
   return (
     <View style={styles.container}>
+      {/* ── Белая плашка под активной иконкой ── */}
       <Animated.View
         style={[
           styles.indicator,
@@ -46,6 +47,7 @@ export default function TabBar({ activeTab, onTabPress }) {
         ]}
       />
 
+      {/* ── Иконки ── */}
       {ICONS.map(({ name, Icon }, index) => (
         <Pressable
           key={name}
