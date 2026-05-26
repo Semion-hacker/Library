@@ -12,6 +12,7 @@
   "dependencies": {
     "expo": "~54.0.33",
     "expo-document-picker": "~14.0.8",
+    "expo-file-system": "~16.0.9",
     "expo-screen-orientation": "~9.0.9",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",

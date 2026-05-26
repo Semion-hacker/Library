@@ -1,13 +1,14 @@
-import { useState, useCallback } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet } from 'react-native';
 import Header from '../components/Header';
 import ShelfImage from '../components/ShelfImage';
 import ShelfSlots from '../components/ShelfSlots';
+import ShelfBooks from '../components/ShelfBooks';
 import TabBar from '../components/TabBar';
 import useEditMode from '../hooks/useEditMode';
 import useSearchMode from '../hooks/useSearchMode';
 import useBookPicker from '../hooks/useBookPicker';
-import { slots as initialSlots } from '../data/slots';
+import { slots as initialSlots, BOOK_COLORS } from '../data/slots';
 
 // ── Импорты экранов разделов ──
 import AllBooksScreen from './AllBooksScreen';
@@ -23,30 +24,95 @@ export default function HomeScreen() {
 
   const handleTabPress = useCallback((index) => setActiveTab(index), []);
 
+  const getRandomColor = () => BOOK_COLORS[Math.floor(Math.random() * BOOK_COLORS.length)];
+
   const handleSlotPress = useCallback(async (slotIndex) => {
     const file = await pickBook();
     if (file) {
       setSlots((prev) =>
         prev.map((slot, i) =>
-          i === slotIndex ? { ...slot, fileName: file.name } : slot
+          i === slotIndex
+            ? {
+                ...slot,
+                books: [
+                  ...slot.books,
+                  { 
+                    fileName: file.name,
+                    title: file.title,
+                    author: file.author,
+                    color: getRandomColor(),
+                    favorite: false,
+                    id: slotIndex * 8 + slot.books.length + 1, // Unique ID
+                  },
+                ],
+              }
+            : slot
         )
       );
+      close(); // Закрываем слоты после выбора книги
     }
-  }, [pickBook]);
+  }, [pickBook, close]);
+
+  // ── Получить список книг (для AllBooksScreen) ──
+  const getBooksList = () => {
+    const allBooks = [];
+    slots.forEach((slot, slotIndex) => {
+      slot.books.forEach((book) => {
+        allBooks.push({
+          id: book.id,
+          title: book.title || `Книга ${book.id}`,
+          color: book.color,
+          favorite: book.favorite,
+        });
+      });
+    });
+    return allBooks;
+  };
+
+  // ── Получить список избранных книг (для FavoritesScreen) ──
+  const getFavoriteBooksList = () => {
+    const favoriteBooks = [];
+    slots.forEach((slot) => {
+      slot.books.forEach((book) => {
+        if (book.favorite) {
+          favoriteBooks.push({
+            id: book.id,
+            title: book.title,
+            color: book.color,
+          });
+        }
+      });
+    });
+    return favoriteBooks;
+  };
+
+  // ── Переключить статус избранного для книги ──
+  const toggleFavorite = (bookId) => {
+    setSlots((prev) =>
+      prev.map((slot) => ({
+        ...slot,
+        books: slot.books.map((book) =>
+          book.id === bookId
+            ? { ...book, favorite: !book.favorite }
+            : book
+        ),
+      }))
+    );
+  };
 
   // ── Выбор контента по активному табу ──
   const renderContent = () => {
     switch (activeTab) {
       case 1:
-         return <AllBooksScreen
-           searchVisible={searchVisible}
-           onSearchOpen={openSearch}
-           searchQuery={query}
-           onSearchChange={setQuery}
-           onSearchClose={closeSearch}
-         />;
+        return <AllBooksScreen
+          books={getBooksList()}
+          onToggleFavorite={toggleFavorite}
+        />;
       case 2:
-        return <FavoritesScreen />;
+        return <FavoritesScreen 
+          books={getFavoriteBooksList()}
+          onToggleFavorite={toggleFavorite}
+        />;
       case 3:
         return <StatisticsScreen />;
       default:
@@ -71,11 +137,13 @@ export default function HomeScreen() {
       {activeTab === 0 && (
         <>
           <ShelfImage onPress={open} />
+          <ShelfBooks slots={slots} />
           <ShelfSlots
             visible={visible}
             opacity={opacity}
             onClose={close}
             onSlotPress={handleSlotPress}
+            slots={slots}
           />
         </>
       )}
