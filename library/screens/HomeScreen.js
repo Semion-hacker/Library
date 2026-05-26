@@ -107,6 +107,11 @@ export default function HomeScreen() {
         return <AllBooksScreen
           books={getBooksList()}
           onToggleFavorite={toggleFavorite}
+          searchVisible={searchVisible}
+          onSearchOpen={openSearch}
+          searchQuery={query}
+          onSearchChange={setQuery}
+          onSearchClose={closeSearch}
         />;
       case 2:
         return <FavoritesScreen 
