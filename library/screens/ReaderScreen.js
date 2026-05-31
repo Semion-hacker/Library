@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Text, Pressable, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
 import ArrowLeftIcon from '../assets/images/svg/arrowLeft.svg';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -9,21 +9,21 @@ const CONTAINER_WIDTH = SCREEN_WIDTH - 10;
 const CONTAINER_HEIGHT = SCREEN_HEIGHT * 0.78;
 const FONT_SIZE = 20;
 const LINE_HEIGHT = 30;
-const TEXT_AVAILABLE_WIDTH = CONTAINER_WIDTH - 30; // Account for padding
+const TEXT_AVAILABLE_WIDTH = CONTAINER_WIDTH - 30;
 const MAX_CHARS_PER_LINE = Math.floor(TEXT_AVAILABLE_WIDTH / (FONT_SIZE * 0.55));
 const LINES_PER_PAGE = 20;
 
-export default function ReaderScreen({ book, onClose }) {
+export default function ReaderScreen({ book, initialPage, onClose, onSaveProgress }) {
+  // Используем initialPage при инициализации, чтобы страница не сбрасывалась при перерендере
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(() => initialPage || 0);
 
   useEffect(() => {
     const loadBookContent = async () => {
       setLoading(true);
       setError(null);
-      setCurrentPage(0);
       
       const bookTitle = book?.title || book?.name || 'Книга';
       
@@ -96,7 +96,6 @@ export default function ReaderScreen({ book, onClose }) {
     return bodyContent.trim().split('\n').filter(p => p.trim().length > 0);
   };
 
-  // Split text into lines and then into pages
   const paginateText = (paragraphs, maxCharsPerLine, linesPerPage) => {
     const allLines = [];
     
@@ -122,7 +121,6 @@ export default function ReaderScreen({ book, onClose }) {
       }
     });
     
-    // Split lines into pages
     const pages = [];
     for (let i = 0; i < allLines.length; i += linesPerPage) {
       pages.push(allLines.slice(i, i + linesPerPage));
@@ -131,15 +129,36 @@ export default function ReaderScreen({ book, onClose }) {
     return pages.length > 0 ? pages : [[]];
   };
 
-  const handleTap = (event) => {
+  const handleTap = useCallback((event) => {
     const x = event.nativeEvent.locationX;
     
     if (x < CONTAINER_WIDTH * 0.3) {
-      if (currentPage > 0) setCurrentPage(currentPage - 1);
+      if (currentPage > 0) {
+        const newPage = currentPage - 1;
+        setCurrentPage(newPage);
+        if (onSaveProgress && book?.id) {
+          onSaveProgress(book.id, newPage);
+        }
+      }
     } else if (x > CONTAINER_WIDTH * 0.7) {
-      if (currentPage < pages.length - 1) setCurrentPage(currentPage + 1);
+      if (currentPage < pages.length - 1) {
+        const newPage = currentPage + 1;
+        setCurrentPage(newPage);
+        if (onSaveProgress && book?.id) {
+          onSaveProgress(book.id, newPage);
+        }
+      }
     }
-  };
+  }, [currentPage, pages.length, onSaveProgress, book?.id]);
+
+  // Save progress on unmount when closing reader
+  useEffect(() => {
+    return () => {
+      if (onSaveProgress && book?.id && pages.length > 0) {
+        onSaveProgress(book.id, currentPage);
+      }
+    };
+  }, [onSaveProgress, book?.id, pages.length, currentPage]);
 
   if (loading) {
     return (
@@ -152,7 +171,6 @@ export default function ReaderScreen({ book, onClose }) {
 
   return (
     <View style={styles.container}>
-      {/* Заголовок */}
       <View style={styles.header}>
         <Pressable onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <ArrowLeftIcon width={28} height={28} color="#fff" />
@@ -162,7 +180,6 @@ export default function ReaderScreen({ book, onClose }) {
         </Text>
       </View>
 
-      {/* Центрированный контейнер для текста */}
       <View style={styles.centerContainer}>
         <TouchableOpacity 
           style={styles.readerContainer}
@@ -189,7 +206,6 @@ export default function ReaderScreen({ book, onClose }) {
         </TouchableOpacity>
       </View>
 
-      {/* Индикатор страниц внизу */}
       <View style={styles.footer}>
         <Text style={styles.pageIndicator}>
           {pages.length > 0 ? currentPage + 1 : 0}/{pages.length}

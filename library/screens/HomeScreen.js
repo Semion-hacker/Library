@@ -9,9 +9,9 @@ import ReaderScreen from './ReaderScreen';
 import useEditMode from '../hooks/useEditMode';
 import useSearchMode from '../hooks/useSearchMode';
 import useBookPicker from '../hooks/useBookPicker';
-import { slots as initialSlots, BOOK_COLORS } from '../data/slots';
+import usePersistentStorage from '../hooks/usePersistentStorage';
+import { BOOK_COLORS } from '../data/slots';
 
-// ── Импорты экранов разделов ──
 import AllBooksScreen from './AllBooksScreen';
 import FavoritesScreen from './FavoritesScreen';
 import StatisticsScreen from './StatisticsScreen';
@@ -21,12 +21,21 @@ export default function HomeScreen() {
   const { visible: searchVisible, open: openSearch, close: closeSearch, query, setQuery } = useSearchMode();
   const { pickBook } = useBookPicker();
   const [activeTab, setActiveTab] = useState(0);
-  const [slots, setSlots] = useState(initialSlots);
   const [readingBook, setReadingBook] = useState(null);
+  
+  const {
+    slots,
+    setSlots,
+    readingProgress,
+    setReadingProgress,
+  } = usePersistentStorage();
 
   const handleTabPress = useCallback((index) => setActiveTab(index), []);
 
-  const getRandomColor = () => BOOK_COLORS[Math.floor(Math.random() * BOOK_COLORS.length)];
+  const getRandomColor = useCallback(() => 
+    BOOK_COLORS[Math.floor(Math.random() * BOOK_COLORS.length)], 
+    []
+  );
 
   const handleSlotPress = useCallback(async (slotIndex) => {
     const file = await pickBook();
@@ -43,22 +52,21 @@ export default function HomeScreen() {
                     fileName: file.name,
                     title: file.title,
                     author: file.author,
-                    uri: file.uri, // Добавляем uri для чтения
+                    uri: file.uri,
                     color: getRandomColor(),
                     favorite: false,
-                    id: slotIndex * 8 + slot.books.length + 1, // Unique ID
+                    id: slotIndex * 8 + slot.books.length + 1,
                   },
                 ],
               }
             : slot
         )
       );
-      close(); // Закрываем слоты после выбора книги
+      close();
     }
-  }, [pickBook, close]);
+  }, [close, getRandomColor, pickBook, setSlots]);
 
-  // ── Получить список книг (для AllBooksScreen) ──
-  const getBooksList = () => {
+  const getBooksList = useCallback(() => {
     const allBooks = [];
     slots.forEach((slot, slotIndex) => {
       slot.books.forEach((book) => {
@@ -72,10 +80,9 @@ export default function HomeScreen() {
       });
     });
     return allBooks;
-  };
+  }, [slots]);
 
-  // ── Получить список избранных книг (для FavoritesScreen) ──
-  const getFavoriteBooksList = () => {
+  const getFavoriteBooksList = useCallback(() => {
     const favoriteBooks = [];
     slots.forEach((slot) => {
       slot.books.forEach((book) => {
@@ -90,10 +97,9 @@ export default function HomeScreen() {
       });
     });
     return favoriteBooks;
-  };
+  }, [slots]);
 
-  // ── Переключить статус избранного для книги ──
-  const toggleFavorite = (bookId) => {
+  const toggleFavorite = useCallback((bookId) => {
     setSlots((prev) =>
       prev.map((slot) => ({
         ...slot,
@@ -104,21 +110,25 @@ export default function HomeScreen() {
         ),
       }))
     );
-  };
+  }, [setSlots]);
 
-  // ── Открыть читалку ──
-  const openReader = (book) => {
+  const saveProgress = useCallback((bookId, page) => {
+    setReadingProgress((prev) => ({
+      ...prev,
+      [bookId]: page,
+    }));
+  }, [setReadingProgress]);
+
+  const openReader = useCallback((book) => {
     console.log('Открываем читалку для книги:', JSON.stringify(book, null, 2));
     setReadingBook(book);
-  };
+  }, []);
 
-  // ── Закрыть читалку ──
-  const closeReader = () => {
+  const closeReader = useCallback(() => {
     console.log('Закрываем читалку');
     setReadingBook(null);
-  };
+  }, []);
 
-  // ── Выбор контента по активному табу ──
   const renderContent = () => {
     switch (activeTab) {
       case 1:
@@ -147,7 +157,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* ── Шапка — только для главного экрана (tab 0) ── */}
       {!readingBook && activeTab === 0 && (
         <Header
           searchVisible={searchVisible}
@@ -158,7 +167,6 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* ── Картинка и слоты только на главном экране ── */}
       {!readingBook && activeTab === 0 && (
         <>
           <ShelfImage onPress={open} />
@@ -173,14 +181,17 @@ export default function HomeScreen() {
         </>
       )}
 
-      {/* ── Читалка или контент других разделов ── */}
       {readingBook ? (
-        <ReaderScreen book={readingBook} onClose={closeReader} />
+        <ReaderScreen 
+          book={readingBook} 
+          initialPage={readingProgress[readingBook.id]} 
+          onClose={closeReader}
+          onSaveProgress={saveProgress}
+        />
       ) : (
         renderContent()
       )}
 
-      {/* ── Нижнее меню ── */}
       {!readingBook && (
         <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
       )}
