@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, FlatList, Text, TouchableOpacity, Image, Pressable } from 'react-native';
 import Header from '../components/Header';
 import AllBooksIcon from '../assets/images/svg/allBooks.svg';
@@ -7,9 +7,19 @@ export default function AllBooksScreen({
   searchVisible, onSearchOpen, searchQuery, onSearchChange, onSearchClose, books = [],
   onToggleFavorite, onBookPress
 }) {
+  // Фильтруем книги по поисковому запросу
+  const filteredBooks = useMemo(() => {
+    if (!searchQuery || searchQuery.trim() === '') {
+      return books;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return books.filter(book => 
+      book.title && book.title.toLowerCase().includes(query)
+    );
+  }, [books, searchQuery]);
+
   const renderBookItem = ({ item }) => (
     <View style={styles.bookItem}>
-      {/* Основное содержимое книги - кликабельно */}
       <Pressable 
         style={styles.bookContent}
         onPress={() => onBookPress?.(item)}
@@ -17,11 +27,10 @@ export default function AllBooksScreen({
         <View style={[styles.bookColorBox, { backgroundColor: item.color || '#4ECDC4' }]} />
         <View style={styles.titleContainer}>
           <Text style={styles.bookTitle} numberOfLines={1}>
-            {item.title || 'Первая книга'}
+            {item.title || 'Книга'}
           </Text>
         </View>
       </Pressable>
-      {/* Сердечко для избранного */}
       <TouchableOpacity
         activeOpacity={0.6}
         onPress={() => onToggleFavorite(item.id)}
@@ -51,11 +60,11 @@ export default function AllBooksScreen({
       />
       
       <FlatList
-        data={books}
+        data={filteredBooks}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderBookItem}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.emptyText}>Список книг пуст</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>Книги не найдены</Text>}
       />
     </View>
   );

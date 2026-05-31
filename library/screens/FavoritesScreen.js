@@ -1,8 +1,20 @@
+import React, { useMemo } from 'react';
 import { View, StyleSheet, FlatList, Text, TouchableOpacity, Image, Pressable } from 'react-native';
 import Header from '../components/Header';
 import FavoritesIcon from '../assets/images/svg/favorites.svg';
 
-export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPress }) {
+export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPress, searchVisible, onSearchOpen, searchQuery, onSearchChange, onSearchClose }) {
+  // Фильтруем избранные книги по поисковому запросу
+  const filteredBooks = useMemo(() => {
+    if (!searchQuery || searchQuery.trim() === '') {
+      return books;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return books.filter(book => 
+      book.title && book.title.toLowerCase().includes(query)
+    );
+  }, [books, searchQuery]);
+
   const renderBookItem = ({ item }) => (
     <View style={styles.bookItem}>
       <Pressable 
@@ -12,7 +24,7 @@ export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPr
         <View style={[styles.bookColorBox, { backgroundColor: item.color || '#4ECDC4' }]} />
         <View style={styles.titleContainer}>
           <Text style={styles.bookTitle} numberOfLines={1}>
-            {item.title || 'Первая книга'}
+            {item.title || 'Книга'}
           </Text>
         </View>
       </Pressable>
@@ -34,15 +46,20 @@ export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPr
       <Header
         title="Избранное"
         HeaderIcon={FavoritesIcon}
-        showSearch={false}
+        showSearch={true}
+        searchVisible={searchVisible}
+        onSearchOpen={onSearchOpen}
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        onSearchClose={onSearchClose}
       />
       
       <FlatList
-        data={books}
+        data={filteredBooks}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderBookItem}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.emptyText}>Список избранных книг пуст</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>Нет избранных книг</Text>}
       />
     </View>
   );

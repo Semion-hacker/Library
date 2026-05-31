@@ -147,6 +147,11 @@ export default function HomeScreen() {
           books={getFavoriteBooksList()}
           onToggleFavorite={toggleFavorite}
           onBookPress={openReader}
+          searchVisible={searchVisible}
+          onSearchOpen={openSearch}
+          searchQuery={query}
+          onSearchChange={setQuery}
+          onSearchClose={closeSearch}
         />;
       case 3:
         return <StatisticsScreen />;
