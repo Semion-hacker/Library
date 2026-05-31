@@ -1,9 +1,33 @@
 {
-  "worktrees": {},
-  "sessions": {},
+  "worktrees": {
+    "wt-1779953174434-1": {
+      "branch": "galvanized-seed",
+      "path": "c:\\Users\\Semio\\Desktop\\Kursovaia\\.kilo\\worktrees\\galvanized-seed",
+      "parentBranch": "master",
+      "createdAt": "2026-05-28T07:26:14.434Z",
+      "remote": "origin"
+    },
+    "wt-1780228205779-1": {
+      "branch": "tidal-failing",
+      "path": "c:\\Users\\Semio\\Desktop\\Kursovaia\\.kilo\\worktrees\\tidal-failing",
+      "parentBranch": "master",
+      "createdAt": "2026-05-31T11:50:05.779Z",
+      "remote": "origin"
+    }
+  },
+  "sessions": {
+    "ses_182215189ffePjti8hEn7Ztm0X": {
+      "worktreeId": "wt-1780228205779-1",
+      "createdAt": "2026-05-31T11:50:06.208Z"
+    }
+  },
   "tabOrder": {
     "local": [
       "pending:1"
     ]
-  }
+  },
+  "worktreeOrder": [
+    "wt-1779953174434-1",
+    "wt-1780228205779-1"
+  ]
 }

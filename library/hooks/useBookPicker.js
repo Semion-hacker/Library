@@ -40,9 +40,10 @@ export default function useBookPicker() {
 
           // Try multiple strategies to find title
           let foundTitle = '';
+          let titleInfoStart = -1;
 
           // Strategy 1: <book-title> inside <title-info>
-          const titleInfoStart = fb2Content.indexOf('<title-info>');
+          titleInfoStart = fb2Content.indexOf('<title-info>');
           if (titleInfoStart !== -1) {
             const titleInfoEnd = fb2Content.indexOf('</title-info>', titleInfoStart);
             if (titleInfoEnd !== -1) {
@@ -66,6 +67,19 @@ export default function useBookPicker() {
                     foundTitle = titleInfoContent.substring(
                       titleStart + '<title>'.length,
                       titleEnd
+                    ).trim();
+                  }
+                }
+              }
+              // Try to extract author
+              if (foundTitle) {
+                const authorStart = titleInfoContent.indexOf('<author>');
+                if (authorStart !== -1) {
+                  const authorEnd = titleInfoContent.indexOf('</author>', authorStart);
+                  if (authorEnd !== -1) {
+                    author = titleInfoContent.substring(
+                      authorStart + '<author>'.length,
+                      authorEnd
                     ).trim();
                   }
                 }
@@ -103,74 +117,36 @@ export default function useBookPicker() {
 
           if (foundTitle) {
             title = foundTitle;
-            // Try to extract author from <author> inside <title-info>
-            let foundAuthor = '';
-            if (titleInfoStart !== -1) {
-              const titleInfoEnd = fb2Content.indexOf('</title-info>', titleInfoStart);
-              if (titleInfoEnd !== -1) {
-                const titleInfoContent = fb2Content.substring(titleInfoStart, titleInfoEnd);
-                const authorStart = titleInfoContent.indexOf('<author>');
-                if (authorStart !== -1) {
-                  const authorEnd = titleInfoContent.indexOf('</author>', authorStart);
-                  if (authorEnd !== -1) {
-                    foundAuthor = titleInfoContent.substring(
-                      authorStart + '<author>'.length,
-                      authorEnd
-                    ).trim();
-                  }
-                }
-              }
-            }
-            // If not found in title-info, try anywhere
-            if (!foundAuthor) {
-              const authorStart = fb2Content.indexOf('<author>');
-              if (authorStart !== -1) {
-                const authorEnd = fb2Content.indexOf('</author>', authorStart);
-                if (authorEnd !== -1) {
-                  foundAuthor = fb2Content.substring(
-                    authorStart + '<author>'.length,
-                    authorEnd
-                  ).trim();
-                }
-              }
-            }
-            if (foundAuthor) {
-              author = foundAuthor;
-            }
+          }
+          if (!author || author === 'Неизвестный автор') {
+            author = 'Неизвестный автор';
           }
         }
         // For EPUB and PDF, we'll use the filename as title for now
-        // TODO: Implement EPUB and PDF metadata extraction in future
       } catch (parseError) {
         console.warn('Ошибка при извлечении метаданных:', parseError);
-        // Fallback to filename if metadata extraction fails
         title = asset.name;
         author = 'Неизвестный автор';
       }
 
-      // Sanitize title and author: replace newlines/tabs with spaces, trim
+      // Sanitize title and author
       if (title) {
         title = title.replace(/[\r\n\t]+/g, ' ').trim();
-        // If after sanitizing it's empty, fallback to filename
-        if (!title) {
-          title = asset.name;
-        }
+        if (!title) title = asset.name;
       }
       if (author) {
         author = author.replace(/[\r\n\t]+/g, ' ').trim();
-        if (!author) {
-          author = 'Неизвестный автор';
-        }
+        if (!author) author = 'Неизвестный автор';
       }
 
       return {
         uri: asset.uri,
         name: asset.name,
-        title: title, // Actual book title or filename
-        author: author, // Author name or default
+        title: title,
+        author: author,
         size: asset.size,
         mimeType: asset.mimeType,
-        favorite: false, // Initialize favorite status
+        favorite: false,
       };
     } catch (error) {
       console.error('Ошибка при выборе файла:', error);

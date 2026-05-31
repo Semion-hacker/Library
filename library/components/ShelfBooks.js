@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, Pressable } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -10,7 +10,7 @@ const BOOK_HEIGHT = 50;
 // Горизонтальное расстояние между книгами в слоте
 const BOOK_SPACING = 10;
 
-export default function ShelfBooks({ slots = [] }) {
+export default function ShelfBooks({ slots = [], onBookPress }) {
   // Вычисляем константы в пикселях один раз
   const slotHeight = height * 0.13; // 13% от высоты экрана (как в ShelfSlots)
   const slotWidth = width * 0.7; // 70% ширины экрана (как в ShelfSlots)
@@ -49,19 +49,23 @@ export default function ShelfBooks({ slots = [] }) {
   });
   
   return (
-    <View style={styles.container} pointerEvents="none">
-      {allBooks.map((book, index) => (
-        <View
-          key={'book-' + index} // Используем индекс в массиве allBooks как ключ (уникален)
+    <View style={styles.container}>
+      {allBooks.map((bookItem, index) => (
+        <Pressable
+          key={'book-' + index}
           style={[
             styles.book,
             { 
-              backgroundColor: book.color || '#4ECDC4',
-              top: book.top,
-              left: book.left,
+              backgroundColor: bookItem.color || '#4ECDC4',
+              top: bookItem.top,
+              left: bookItem.left,
             }
           ]}
-        />
+          onPress={() => onBookPress?.(bookItem)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <View style={styles.bookInner} />
+        </Pressable>
       ))}
     </View>
   );
@@ -80,5 +84,11 @@ const styles = StyleSheet.create({
     width: BOOK_WIDTH,
     height: BOOK_HEIGHT,
     borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bookInner: {
+    width: '100%',
+    height: '100%',
   },
 });

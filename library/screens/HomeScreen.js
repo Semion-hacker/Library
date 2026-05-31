@@ -5,6 +5,7 @@ import ShelfImage from '../components/ShelfImage';
 import ShelfSlots from '../components/ShelfSlots';
 import ShelfBooks from '../components/ShelfBooks';
 import TabBar from '../components/TabBar';
+import ReaderScreen from './ReaderScreen';
 import useEditMode from '../hooks/useEditMode';
 import useSearchMode from '../hooks/useSearchMode';
 import useBookPicker from '../hooks/useBookPicker';
@@ -21,6 +22,7 @@ export default function HomeScreen() {
   const { pickBook } = useBookPicker();
   const [activeTab, setActiveTab] = useState(0);
   const [slots, setSlots] = useState(initialSlots);
+  const [readingBook, setReadingBook] = useState(null);
 
   const handleTabPress = useCallback((index) => setActiveTab(index), []);
 
@@ -29,6 +31,7 @@ export default function HomeScreen() {
   const handleSlotPress = useCallback(async (slotIndex) => {
     const file = await pickBook();
     if (file) {
+      console.log('Выбранный файл:', JSON.stringify(file, null, 2));
       setSlots((prev) =>
         prev.map((slot, i) =>
           i === slotIndex
@@ -40,6 +43,7 @@ export default function HomeScreen() {
                     fileName: file.name,
                     title: file.title,
                     author: file.author,
+                    uri: file.uri, // Добавляем uri для чтения
                     color: getRandomColor(),
                     favorite: false,
                     id: slotIndex * 8 + slot.books.length + 1, // Unique ID
@@ -63,6 +67,7 @@ export default function HomeScreen() {
           title: book.title || `Книга ${book.id}`,
           color: book.color,
           favorite: book.favorite,
+          uri: book.uri,
         });
       });
     });
@@ -79,6 +84,7 @@ export default function HomeScreen() {
             id: book.id,
             title: book.title,
             color: book.color,
+            uri: book.uri,
           });
         }
       });
@@ -100,6 +106,18 @@ export default function HomeScreen() {
     );
   };
 
+  // ── Открыть читалку ──
+  const openReader = (book) => {
+    console.log('Открываем читалку для книги:', JSON.stringify(book, null, 2));
+    setReadingBook(book);
+  };
+
+  // ── Закрыть читалку ──
+  const closeReader = () => {
+    console.log('Закрываем читалку');
+    setReadingBook(null);
+  };
+
   // ── Выбор контента по активному табу ──
   const renderContent = () => {
     switch (activeTab) {
@@ -107,6 +125,7 @@ export default function HomeScreen() {
         return <AllBooksScreen
           books={getBooksList()}
           onToggleFavorite={toggleFavorite}
+          onBookPress={openReader}
           searchVisible={searchVisible}
           onSearchOpen={openSearch}
           searchQuery={query}
@@ -117,6 +136,7 @@ export default function HomeScreen() {
         return <FavoritesScreen 
           books={getFavoriteBooksList()}
           onToggleFavorite={toggleFavorite}
+          onBookPress={openReader}
         />;
       case 3:
         return <StatisticsScreen />;
@@ -128,7 +148,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       {/* ── Шапка — только для главного экрана (tab 0) ── */}
-      {activeTab === 0 && (
+      {!readingBook && activeTab === 0 && (
         <Header
           searchVisible={searchVisible}
           onSearchOpen={openSearch}
@@ -139,10 +159,10 @@ export default function HomeScreen() {
       )}
 
       {/* ── Картинка и слоты только на главном экране ── */}
-      {activeTab === 0 && (
+      {!readingBook && activeTab === 0 && (
         <>
           <ShelfImage onPress={open} />
-          <ShelfBooks slots={slots} />
+          <ShelfBooks slots={slots} onBookPress={openReader} />
           <ShelfSlots
             visible={visible}
             opacity={opacity}
@@ -153,11 +173,17 @@ export default function HomeScreen() {
         </>
       )}
 
-      {/* ── Контент других разделов ── */}
-      {renderContent()}
+      {/* ── Читалка или контент других разделов ── */}
+      {readingBook ? (
+        <ReaderScreen book={readingBook} onClose={closeReader} />
+      ) : (
+        renderContent()
+      )}
 
       {/* ── Нижнее меню ── */}
-      <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
+      {!readingBook && (
+        <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
+      )}
     </View>
   );
 }

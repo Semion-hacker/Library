@@ -1,19 +1,21 @@
-import { View, StyleSheet, FlatList, Text, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, FlatList, Text, TouchableOpacity, Image, Pressable } from 'react-native';
 import Header from '../components/Header';
 import FavoritesIcon from '../assets/images/svg/favorites.svg';
 
-export default function FavoritesScreen({ books = [], onToggleFavorite }) {
+export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPress }) {
   const renderBookItem = ({ item }) => (
     <View style={styles.bookItem}>
-      {/* Горизонтальная книга (вид сверху) - 50x40 */}
-      <View style={[styles.bookColorBox, { backgroundColor: item.color || '#4ECDC4' }]} />
-      {/* Название книги с ограничением по длине */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.bookTitle} numberOfLines={1}>
-          {item.title || 'Первая книга'}
-        </Text>
-      </View>
-      {/* Сердечко для избранного (в разделе Избранное всегда красное) */}
+      <Pressable 
+        style={styles.bookContent}
+        onPress={() => onBookPress?.(item)}
+      >
+        <View style={[styles.bookColorBox, { backgroundColor: item.color || '#4ECDC4' }]} />
+        <View style={styles.titleContainer}>
+          <Text style={styles.bookTitle} numberOfLines={1}>
+            {item.title || 'Первая книга'}
+          </Text>
+        </View>
+      </Pressable>
       <TouchableOpacity
         activeOpacity={0.6}
         onPress={() => onToggleFavorite(item.id)}
@@ -61,8 +63,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  bookContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   bookColorBox: {
-    width: 40,  // Вертикальная книга (спина)
+    width: 40,
     height: 50,
     borderRadius: 4,
     marginRight: 12,
