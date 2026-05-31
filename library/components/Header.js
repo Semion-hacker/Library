@@ -1,17 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, Keyboard, Image } from 'react-native';
-import Loupe from '../assets/images/svg/loupe.svg';
+import { View, Text, TextInput, StyleSheet, Keyboard, Image, Pressable } from 'react-native';
+import LoupeIcon from '../assets/images/svg/loupe.svg';
 
 // ── Режимы Header ──
-// 1. myLibrary (HomeScreen)  —showSearch=true, searchProps передаются, иконка приложения
-// 2. allBooks                —showSearch=true,  иконка allBooks,
-// 3. favorites/statistics/user—showSearch=false, иконка раздела, лупа скрыта
+// 1. myLibrary (HomeScreen)  —значок меню слева
+// 2. allBooks                —иконка allBooks слева, лупа справа
+// 3. favorites/statistics/user—иконка раздела слева
 
 export default function Header({
   // ── Режим 1 (myLibrary) ──
   searchVisible, onSearchOpen, searchQuery, onSearchChange, onSearchClose,
   // ── Режим 2 (остальные разделы) ──
   title, HeaderIcon, showSearch = true,
+  // ── Меню ──
+  showMenu = false, onMenuPress,
 }) {
   const inputRef = useRef(null);
 
@@ -27,39 +29,70 @@ export default function Header({
     onSearchClose?.();
   };
 
+  // ── Режим Моя библиотека (с меню) ──
+  if (showMenu) {
+    return (
+      <View style={styles.header}>
+        <View style={styles.iconWrapper}>
+          <Image
+            source={require('../assets/images/icon.png')}
+            style={styles.icon}
+          />
+        </View>
+        <Text style={[styles.title, searchVisible && styles.hidden]}>Моя библиотека</Text>
+        <Pressable onPress={onMenuPress} style={styles.menuWrapper}>
+          <Image
+            source={require('../assets/images/menu.png')}
+            style={styles.menuIcon}
+          />
+        </Pressable>
+        {searchVisible && (
+          <View style={styles.searchOverlay}>
+            <TextInput
+              ref={inputRef}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={onSearchChange}
+              placeholder="Поиск..."
+              placeholderTextColor="#999"
+              returnKeyType="search"
+              onSubmitEditing={handleClose}
+            />
+            <Text style={styles.cancelBtn} onPress={handleClose}>Отменить</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
+
   // ── Упрощённый режим (favorites, statistics, user) — showSearch=false ──
   if (!showSearch) {
     return (
       <View style={styles.header}>
-        {/* ИКОНКА РАЗДЕЛА */}
         <View style={styles.iconWrapper}>
           <HeaderIcon width={28} height={28} color="#191A1B" />
         </View>
-        {/* ЗАГОЛОВОК */}
         <Text style={styles.title}>{title || 'Моя библиотека'}</Text>
       </View>
     );
   }
 
-  // ── Режим allBooks —showSearch=true, но без поля поиска по умолчанию ──
+  // ── Режим allBooks —showSearch=true, лупа справа ──
   if (showSearch && !searchVisible && HeaderIcon) {
     return (
       <View style={styles.header}>
-        {/* ИКОНКА РАЗДЕЛА вместо иконки приложения */}
         <View style={styles.iconWrapper}>
           <HeaderIcon width={28} height={28} color="#191A1B" />
         </View>
-        {/* ЗАГОЛОВОК */}
         <Text style={styles.title}>{title || 'Моя библиотека'}</Text>
-        {/* ЛУПА справа */}
         <View style={styles.loupeWrapper}>
-          <Loupe width={22} height={22} onPress={onSearchOpen} />
+          <LoupeIcon width={22} height={22} onPress={onSearchOpen} />
         </View>
       </View>
     );
   }
 
-  // ── Полный режим (myLibrary — поиск открыт) ──
+  // ── Полный режим (поиск открыт) ──
   return (
     <View style={styles.header}>
       <View style={styles.iconWrapper} pointerEvents="none">
@@ -70,12 +103,6 @@ export default function Header({
       </View>
 
       <Text style={[styles.title, searchVisible && styles.hidden]}>Моя библиотека</Text>
-
-      {!searchVisible && (
-        <View style={styles.loupeWrapper} pointerEvents="box-none">
-          <Loupe width={22} height={22} onPress={onSearchOpen} />
-        </View>
-      )}
 
       {searchVisible && (
         <View style={styles.searchOverlay}>
@@ -120,6 +147,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
   },
+  menuIcon: {
+    width: 32,
+    height: 32,
+  },
   iconWrapper: {
     position: 'absolute',
     left: 25,
@@ -128,6 +159,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loupeWrapper: {
+    position: 'absolute',
+    right: 25,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  menuWrapper: {
     position: 'absolute',
     right: 25,
     top: 0,

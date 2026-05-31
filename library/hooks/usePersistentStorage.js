@@ -3,6 +3,7 @@ import * as FileSystem from 'expo-file-system';
 
 const SLOTS_FILE = FileSystem.documentDirectory + 'library-slots.json';
 const PROGRESS_FILE = FileSystem.documentDirectory + 'library-progress.json';
+const PAGES_FILE = FileSystem.documentDirectory + 'library-pages.json';
 
 const getInitialSlots = () => [
   { id: 1, books: [] },
@@ -15,6 +16,7 @@ const getInitialSlots = () => [
 export default function usePersistentStorage() {
   const [slots, setSlots] = useState(getInitialSlots());
   const [readingProgress, setReadingProgress] = useState({});
+  const [totalPages, setTotalPages] = useState({});
   const isFirstLoad = useRef(true);
 
   // Load data on mount only once
@@ -48,6 +50,20 @@ export default function usePersistentStorage() {
         console.error('Failed to load reading progress:', error);
       }
 
+      try {
+        // Load total pages
+        const pagesInfo = await FileSystem.getInfoAsync(PAGES_FILE);
+        if (pagesInfo.exists) {
+          const content = await FileSystem.readAsStringAsync(PAGES_FILE, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          const savedPages = JSON.parse(content);
+          setTotalPages(savedPages);
+        }
+      } catch (error) {
+        console.error('Failed to load total pages:', error);
+      }
+
       isFirstLoad.current = false;
     };
     loadData();
@@ -75,10 +91,23 @@ export default function usePersistentStorage() {
     }
   }, [readingProgress]);
 
+  // Save total pages whenever it changes (skip first load)
+  useEffect(() => {
+    if (!isFirstLoad.current) {
+      FileSystem.writeAsStringAsync(
+        PAGES_FILE,
+        JSON.stringify(totalPages),
+        { encoding: FileSystem.EncodingType.UTF8 }
+      ).catch(err => console.error('Failed to save total pages:', err));
+    }
+  }, [totalPages]);
+
   return {
     slots,
     setSlots,
     readingProgress,
     setReadingProgress,
+    totalPages,
+    setTotalPages,
   };
 }

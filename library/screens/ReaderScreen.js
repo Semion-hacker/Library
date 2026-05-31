@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Text, Pressable, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
 import ArrowLeftIcon from '../assets/images/svg/arrowLeft.svg';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -13,12 +13,12 @@ const TEXT_AVAILABLE_WIDTH = CONTAINER_WIDTH - 30;
 const MAX_CHARS_PER_LINE = Math.floor(TEXT_AVAILABLE_WIDTH / (FONT_SIZE * 0.55));
 const LINES_PER_PAGE = 20;
 
-export default function ReaderScreen({ book, initialPage, onClose, onSaveProgress }) {
-  // Используем initialPage при инициализации, чтобы страница не сбрасывалась при перерендере
-  const [pages, setPages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(() => initialPage || 0);
+export default function ReaderScreen({ book, initialPage, onClose, onSaveProgress, onSaveTotalPages }) {
+   // Используем initialPage при инициализации, чтобы страница не сбрасывалась при перерендере
+   const [pages, setPages] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState(null);
+   const [currentPage, setCurrentPage] = useState(() => initialPage || 0);
 
   useEffect(() => {
     const loadBookContent = async () => {
@@ -65,8 +65,15 @@ export default function ReaderScreen({ book, initialPage, onClose, onSaveProgres
       }
     };
 
-    loadBookContent();
-  }, [book]);
+loadBookContent();
+    }, [book]);
+
+  // Save total pages when book is loaded
+  useEffect(() => {
+    if (book?.id && pages.length > 0 && onSaveTotalPages) {
+      onSaveTotalPages(book.id, pages.length);
+    }
+  }, [pages, book?.id, onSaveTotalPages]);
 
   const extractFb2Text = (fb2Content) => {
     if (!fb2Content) return [];

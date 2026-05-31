@@ -6,6 +6,7 @@ import ShelfSlots from '../components/ShelfSlots';
 import ShelfBooks from '../components/ShelfBooks';
 import TabBar from '../components/TabBar';
 import ReaderScreen from './ReaderScreen';
+import Menu from '../components/Menu';
 import useEditMode from '../hooks/useEditMode';
 import useSearchMode from '../hooks/useSearchMode';
 import useBookPicker from '../hooks/useBookPicker';
@@ -22,15 +23,57 @@ export default function HomeScreen() {
   const { pickBook } = useBookPicker();
   const [activeTab, setActiveTab] = useState(0);
   const [readingBook, setReadingBook] = useState(null);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
   
-  const {
-    slots,
-    setSlots,
-    readingProgress,
-    setReadingProgress,
-  } = usePersistentStorage();
+const {
+     slots,
+     setSlots,
+     readingProgress,
+     setReadingProgress,
+     totalPages,
+     setTotalPages,
+   } = usePersistentStorage();
 
   const handleTabPress = useCallback((index) => setActiveTab(index), []);
+
+  const handleMenuPress = () => {
+    setMenuVisible(true);
+  };
+
+  const handleMenuClose = () => {
+    setMenuVisible(false);
+  };
+
+  const handleNavigate = useCallback((tabIndex) => {
+    setActiveTab(tabIndex);
+  }, []);
+
+  const toggleDeleteMode = () => {
+    setDeleteMode(prev => !prev);
+  };
+
+  const handleDeleteBook = (bookId) => {
+    // Удаляем книгу из слотов
+    setSlots((prev) =>
+      prev.map((slot) => ({
+        ...slot,
+        books: slot.books.filter((book) => book.id !== bookId),
+      }))
+    );
+    // Удаляем прогресс чтения для этой книги
+    setReadingProgress((prev) => {
+      const newProgress = { ...prev };
+      delete newProgress[bookId];
+      return newProgress;
+    });
+    // Удаляем сохранённое количество страниц для этой книги
+    setTotalPages((prev) => {
+      const newPages = { ...prev };
+      delete newPages[bookId];
+      return newPages;
+    });
+  };
 
   const getRandomColor = useCallback(() => 
     BOOK_COLORS[Math.floor(Math.random() * BOOK_COLORS.length)], 
@@ -113,11 +156,18 @@ export default function HomeScreen() {
   }, [setSlots]);
 
   const saveProgress = useCallback((bookId, page) => {
-    setReadingProgress((prev) => ({
-      ...prev,
-      [bookId]: page,
-    }));
-  }, [setReadingProgress]);
+     setReadingProgress((prev) => ({
+       ...prev,
+       [bookId]: page,
+     }));
+   }, [setReadingProgress]);
+
+   const saveTotalPages = useCallback((bookId, total) => {
+     setTotalPages((prev) => ({
+       ...prev,
+       [bookId]: total,
+     }));
+   }, [setTotalPages]);
 
   const openReader = useCallback((book) => {
     console.log('Открываем читалку для книги:', JSON.stringify(book, null, 2));
@@ -141,20 +191,24 @@ export default function HomeScreen() {
           searchQuery={query}
           onSearchChange={setQuery}
           onSearchClose={closeSearch}
+          deleteMode={deleteMode}
+          onDeleteBook={handleDeleteBook}
         />;
-      case 2:
-        return <FavoritesScreen 
-          books={getFavoriteBooksList()}
-          onToggleFavorite={toggleFavorite}
-          onBookPress={openReader}
-          searchVisible={searchVisible}
-          onSearchOpen={openSearch}
-          searchQuery={query}
-          onSearchChange={setQuery}
-          onSearchClose={closeSearch}
-        />;
-      case 3:
-        return <StatisticsScreen />;
+case 2:
+         return <FavoritesScreen 
+           books={getFavoriteBooksList()}
+           onToggleFavorite={toggleFavorite}
+           onBookPress={openReader}
+           searchQuery={query}
+           deleteMode={deleteMode}
+           onDeleteBook={handleDeleteBook}
+         />;
+case 3:
+         return <StatisticsScreen 
+           slots={slots} 
+           readingProgress={readingProgress} 
+           totalPages={totalPages} 
+         />;
       default:
         return null;
     }
@@ -164,6 +218,8 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {!readingBook && activeTab === 0 && (
         <Header
+          showMenu={true}
+          onMenuPress={handleMenuPress}
           searchVisible={searchVisible}
           onSearchOpen={openSearch}
           searchQuery={query}
@@ -175,31 +231,40 @@ export default function HomeScreen() {
       {!readingBook && activeTab === 0 && (
         <>
           <ShelfImage onPress={open} />
-          <ShelfBooks slots={slots} onBookPress={openReader} />
-          <ShelfSlots
-            visible={visible}
-            opacity={opacity}
-            onClose={close}
-            onSlotPress={handleSlotPress}
-            slots={slots}
-          />
+          <ShelfBooks slots={slots} onBookPress={openReader} deleteMode={deleteMode} onDeleteBook={handleDeleteBook} />
+<ShelfSlots
+             visible={visible}
+             opacity={opacity}
+             onClose={close}
+             onSlotPress={handleSlotPress}
+             slots={slots}
+           />
         </>
       )}
 
-      {readingBook ? (
-        <ReaderScreen 
-          book={readingBook} 
-          initialPage={readingProgress[readingBook.id]} 
-          onClose={closeReader}
-          onSaveProgress={saveProgress}
-        />
-      ) : (
+{readingBook ? (
+         <ReaderScreen 
+           book={readingBook} 
+           initialPage={readingProgress[readingBook.id]} 
+           onClose={closeReader}
+           onSaveProgress={saveProgress}
+           onSaveTotalPages={saveTotalPages}
+         />
+       ) : (
         renderContent()
       )}
 
       {!readingBook && (
         <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
       )}
+
+      <Menu
+        visible={menuVisible}
+        onClose={handleMenuClose}
+        onNavigate={handleNavigate}
+        onDeleteMode={toggleDeleteMode}
+        onDeleteModeActive={deleteMode}
+      />
     </View>
   );
 }

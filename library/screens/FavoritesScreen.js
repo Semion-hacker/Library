@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList, Text, TouchableOpacity, Image, Pressable } 
 import Header from '../components/Header';
 import FavoritesIcon from '../assets/images/svg/favorites.svg';
 
-export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPress, searchVisible, onSearchOpen, searchQuery, onSearchChange, onSearchClose }) {
+export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPress, searchQuery, deleteMode, onDeleteBook }) {
   // Фильтруем избранные книги по поисковому запросу
   const filteredBooks = useMemo(() => {
     if (!searchQuery || searchQuery.trim() === '') {
@@ -28,16 +28,30 @@ export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPr
           </Text>
         </View>
       </Pressable>
-      <TouchableOpacity
-        activeOpacity={0.6}
-        onPress={() => onToggleFavorite(item.id)}
-        style={styles.favoriteButton}
-      >
-        <Image
-          source={require('../assets/images/redHeart.png')}
-          style={styles.favoriteImage}
-        />
-      </TouchableOpacity>
+      
+      {deleteMode ? (
+        <TouchableOpacity
+          activeOpacity={0.6}
+          onPress={() => onDeleteBook?.(item.id)}
+          style={styles.deleteButton}
+        >
+          <Image
+            source={require('../assets/images/bin.png')}
+            style={styles.deleteIcon}
+          />
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          activeOpacity={0.6}
+          onPress={() => onToggleFavorite(item.id)}
+          style={styles.favoriteButton}
+        >
+          <Image
+            source={require('../assets/images/redHeart.png')}
+            style={styles.favoriteImage}
+          />
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -46,12 +60,7 @@ export default function FavoritesScreen({ books = [], onToggleFavorite, onBookPr
       <Header
         title="Избранное"
         HeaderIcon={FavoritesIcon}
-        showSearch={true}
-        searchVisible={searchVisible}
-        onSearchOpen={onSearchOpen}
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        onSearchClose={onSearchClose}
+        showSearch={false}
       />
       
       <FlatList
@@ -114,5 +123,15 @@ const styles = StyleSheet.create({
   favoriteImage: {
     width: 24,
     height: 24,
+  },
+  deleteButton: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteIcon: {
+    width: 20,
+    height: 20,
   },
 });
